@@ -1,0 +1,11 @@
+{
+  "name": "Game Platform Icons",
+  "author": "PacificSilent",
+  "flags": [],
+  "api_version": 1,
+  "publish": {
+    "tags": ["library", "root", "theme"],
+    "description": "Shows a platform logo (Xbox, PlayStation, Switch, and many more) in the corner of every game card based on the Steam Collection the game belongs to. Perfect for organizing emulated games by console.",
+    "image": "https://opengraph.githubassets.com/1/PacificSilent/decky-game-platform-icons"
+  }
+}
