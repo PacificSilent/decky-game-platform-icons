@@ -9,6 +9,20 @@ cada card de juego, según la **colección de Steam** a la que pertenece.
 > todos esos juegos mostrarán el logo de Switch. Ideal para organizar juegos
 > emulados por consola.
 
+## Capturas
+
+**Biblioteca** — cada juego con el logo de su plataforma según su colección:
+
+![Biblioteca de Steam Deck con un logo de plataforma en la esquina de cada card](assets/library.png)
+
+**Inicio** — también en los carruseles de la pantalla principal:
+
+![Pantalla de Inicio con los iconos de plataforma](assets/home.png)
+
+**Ajustes** (menú de Acceso rápido → Game Platform Icons):
+
+![Panel de ajustes del plugin en el menú de Acceso rápido](assets/settings.png)
+
 ## Características
 
 - 🎮 **46 plataformas** reconocidas: Nintendo (Switch, Wii U/Wii, GameCube, N64,
@@ -82,13 +96,35 @@ pnpm typecheck      # comprobación de tipos
 - `src/cardBadges.ts` — CSS de los badges + observer que marca las cards.
 - `src/collections.ts` — acceso a `collectionStore` y resolución de plataforma.
 - `src/QuickAccess.tsx` — panel de ajustes del menú de Acceso rápido.
-- `main.py` — backend que persiste la configuración.
+- `main.py` — backend mínimo (solo registra eventos de ciclo de vida; la
+  configuración se guarda en el `localStorage` del cliente de Steam).
 
 ### Añadir o ajustar una plataforma
 
 Edita `src/platforms.tsx`: añade/edita una entrada de `PLATFORMS` (color, icono,
 `aliases`) y ejecuta `pnpm build` (regenera los iconos automáticamente).
 
+## Desarrollo asistido por IA
+
+El desarrollo de este plugin fue **asistido por IA** (Claude Code): diseño,
+código, tests y documentación se realizaron con su ayuda y revisión humana.
+
 ## Licencia
 
-BSD-3-Clause. Consulta [LICENSE](./LICENSE).
+**MIT** — consulta [LICENSE](./LICENSE).
+
+### Aviso legal y marcas
+
+Este es un plugin **no oficial** y no está afiliado, patrocinado ni respaldado
+por Valve, Microsoft, Sony, Nintendo, Sega ni ninguna otra empresa. Todos los
+nombres de plataformas y logotipos son **marcas registradas de sus respectivos
+propietarios** y se usan aquí únicamente con fines identificativos (uso
+nominativo) para indicar a qué sistema pertenece cada juego.
+
+### Atribuciones
+
+- Iconos de marca vía [react-icons](https://github.com/react-icons/react-icons),
+  que empaqueta **Font Awesome Free** (iconos con licencia CC BY 4.0) y **Simple
+  Icons** (CC0).
+- Los glifos de la familia Nintendo y otros sistemas sin icono de marca son
+  **SVG propios** incluidos en este repositorio.
