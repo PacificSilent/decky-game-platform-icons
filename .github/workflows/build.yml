@@ -1,0 +1,58 @@
+name: Build plugin
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Package plugin
+        run: |
+          mkdir -p out/pkg/decky-game-platform-icons/dist
+          cp plugin.json package.json main.py README.md LICENSE out/pkg/decky-game-platform-icons/
+          cp dist/index.js out/pkg/decky-game-platform-icons/dist/
+          cd out/pkg && zip -r ../decky-game-platform-icons.zip decky-game-platform-icons
+
+      # The plugin folder is uploaded unzipped: GitHub wraps artifact downloads
+      # in a zip, so the downloaded file is itself the installable plugin zip.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: decky-game-platform-icons
+          path: out/pkg
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/decky-game-platform-icons.zip

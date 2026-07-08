@@ -8,14 +8,14 @@ import {
   stopObserver,
   tagCapsules,
 } from "./cardBadges";
-import { loadSettings, subscribeSettings } from "./settings";
+import { subscribeSettings } from "./settings";
 import { QuickAccessPanel } from "./QuickAccess";
 
 export default definePlugin(() => {
   let unsubscribe: () => void = () => {};
 
-  const init = async () => {
-    await loadSettings();
+  try {
+    // Settings are already loaded synchronously from localStorage on import.
     applyStyles();
     startObserver();
     // Re-apply CSS + re-tag capsules whenever the user changes settings.
@@ -23,9 +23,9 @@ export default definePlugin(() => {
       applyStyles();
       tagCapsules();
     });
-  };
-
-  init().catch((e) => console.error("[GamePlatformIcons] init failed", e));
+  } catch (e) {
+    console.error("[GamePlatformIcons] init failed", e);
+  }
 
   return {
     name: "Game Platform Icons",

@@ -35,6 +35,9 @@ Thumbs.db
 # Ignore built ts files
 dist/
 
+# Packaged plugin zips
+*.zip
+
 __pycache__/
 
 /.yalc

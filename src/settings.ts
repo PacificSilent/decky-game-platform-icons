@@ -1,4 +1,3 @@
-import { callable } from "@decky/api";
 import { useEffect, useReducer } from "react";
 
 export type BadgePosition =
@@ -46,13 +45,39 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   overrides: {},
 };
 
-const backendGetSettings = callable<[], Partial<PluginSettings>>("get_settings");
-const backendSaveSettings = callable<[settings: PluginSettings], boolean>(
-  "save_settings",
-);
+const STORAGE_KEY = "decky-game-platform-icons:settings";
 
-let current: PluginSettings = { ...DEFAULT_SETTINGS };
-let loaded = false;
+function normalize(raw: Partial<PluginSettings> | undefined): PluginSettings {
+  const merged: PluginSettings = { ...DEFAULT_SETTINGS, ...(raw ?? {}) };
+  if (!merged.overrides || typeof merged.overrides !== "object") {
+    merged.overrides = {};
+  }
+  merged.size = Math.min(96, Math.max(16, Math.round(merged.size)));
+  merged.opacity = Math.min(1, Math.max(0.1, merged.opacity));
+  return merged;
+}
+
+function readStored(): Partial<PluginSettings> | undefined {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw) as Partial<PluginSettings>;
+  } catch (e) {
+    console.error("[GamePlatformIcons] failed to read settings", e);
+  }
+  return undefined;
+}
+
+function writeStored(settings: PluginSettings): void {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  } catch (e) {
+    console.error("[GamePlatformIcons] failed to save settings", e);
+  }
+}
+
+// Settings persist in the Steam client's localStorage (like sibling plugins),
+// so they load synchronously at startup — no async round-trip, no default flash.
+let current: PluginSettings = normalize(readStored());
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -73,65 +98,37 @@ export function subscribeSettings(fn: () => void): () => void {
   };
 }
 
-/** Synchronous access to the latest known settings. */
+/** Synchronous access to the latest settings. */
 export function getSettings(): PluginSettings {
   return current;
 }
 
-export function isLoaded(): boolean {
-  return loaded;
-}
-
-function normalize(raw: Partial<PluginSettings> | undefined): PluginSettings {
-  const merged: PluginSettings = { ...DEFAULT_SETTINGS, ...(raw ?? {}) };
-  if (!merged.overrides || typeof merged.overrides !== "object") {
-    merged.overrides = {};
-  }
-  // Clamp numeric ranges defensively.
-  merged.size = Math.min(96, Math.max(16, Math.round(merged.size)));
-  merged.opacity = Math.min(1, Math.max(0.1, merged.opacity));
-  return merged;
-}
-
-/** Load settings from the Python backend (once), then notify subscribers. */
-export async function loadSettings(): Promise<PluginSettings> {
-  try {
-    const raw = await backendGetSettings();
-    current = normalize(raw);
-  } catch (e) {
-    console.error("[GamePlatformIcons] failed to load settings", e);
-    current = { ...DEFAULT_SETTINGS };
-  }
-  loaded = true;
+/** Re-read settings from storage and notify subscribers. */
+export function loadSettings(): PluginSettings {
+  current = normalize(readStored());
   emit();
   return current;
 }
 
 /** Merge a partial patch into the settings, persist, and notify subscribers. */
-export async function updateSettings(
-  patch: Partial<PluginSettings>,
-): Promise<void> {
+export function updateSettings(patch: Partial<PluginSettings>): void {
   current = normalize({ ...current, ...patch });
+  writeStored(current);
   emit();
-  try {
-    await backendSaveSettings(current);
-  } catch (e) {
-    console.error("[GamePlatformIcons] failed to save settings", e);
-  }
 }
 
 /** Set (or clear) the platform override for a single collection. */
-export async function setOverride(
+export function setOverride(
   collectionId: string,
   platformId: string | null,
-): Promise<void> {
+): void {
   const overrides = { ...current.overrides };
   if (platformId === null) {
     delete overrides[collectionId];
   } else {
     overrides[collectionId] = platformId;
   }
-  await updateSettings({ overrides });
+  updateSettings({ overrides });
 }
 
 /** React hook that re-renders the caller whenever settings change. */
