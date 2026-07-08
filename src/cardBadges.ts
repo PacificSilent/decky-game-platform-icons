@@ -45,6 +45,20 @@ function containerClass(): string | null {
   return assetClasses()?.Container ?? null;
 }
 
+/**
+ * A precise selector for real capsule images (portrait + landscape). Being
+ * specific avoids tagging the wrong `.Container` wrapper in some views (which is
+ * why badges could be missing in the Library grid).
+ */
+function capsuleSelector(): string | null {
+  const a = assetClasses();
+  if (!a?.Container) return null;
+  const parts: string[] = [];
+  if (a.PortraitImage) parts.push(`.${a.Container}.${a.PortraitImage}`);
+  if (a.LandscapeImage) parts.push(`.${a.Container}.${a.LandscapeImage}`);
+  return parts.length ? parts.join(", ") : `.${a.Container}`;
+}
+
 // ----------------------------- glyph + colour -----------------------------
 
 function glyphDataUri(platformId: string, fill: string): string {
@@ -108,7 +122,7 @@ function buildCss(settings: PluginSettings, cls: string): string {
       `${sel}[${ATTR}="${p.id}"]::after{content:"";position:absolute;${pos};` +
       `width:${size}px;height:${size}px;background-color:${bg};` +
       `background-image:url("${uri}");background-size:${bgSize};background-repeat:no-repeat;` +
-      `background-position:center;${extra}opacity:${settings.opacity};pointer-events:none;z-index:10;}\n`;
+      `background-position:center;${extra}opacity:${settings.opacity};pointer-events:none;z-index:9999;}\n`;
   }
   return css;
 }
@@ -136,24 +150,30 @@ export function removeStyles(): void {
 
 // ----------------------------- appid from fiber ---------------------------
 
+function toAppId(v: unknown): number | null {
+  if (typeof v === "number" && v > 0) return v;
+  if (typeof v === "string" && v) {
+    const n = Number(v);
+    if (!Number.isNaN(n) && n > 0) return n;
+  }
+  return null;
+}
+
 function appIdFromElement(el: Element): number | null {
   // The fiber is walked dynamically, so it is intentionally untyped.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let fiber: any = getReactInstance(el);
   let depth = 0;
-  while (fiber && depth < 25) {
-    const props = fiber.memoizedProps;
-    if (props) {
-      if (typeof props.appid === "number") return props.appid;
-      const ov = props.appOverview;
-      if (ov) {
-        const a = ov.appid;
-        if (typeof a === "number") return a;
-        if (typeof a === "string" && a) {
-          const n = Number(a);
-          if (!Number.isNaN(n)) return n;
-        }
-      }
+  while (fiber && depth < 40) {
+    const p = fiber.memoizedProps;
+    if (p) {
+      // Different views expose the appid on slightly different props.
+      const direct =
+        toAppId(p.appid) ??
+        toAppId(p.appOverview?.appid) ??
+        toAppId(p.app?.appid) ??
+        toAppId(p.overview?.appid);
+      if (direct != null) return direct;
     }
     fiber = fiber.return;
     depth++;
@@ -165,13 +185,13 @@ function appIdFromElement(el: Element): number | null {
 
 /** (Re)compute and set the platform data-attribute on every visible capsule. */
 export function tagCapsules(): void {
-  const cls = containerClass();
-  if (!cls) return;
+  const selector = capsuleSelector();
+  if (!selector) return;
   const settings = getSettings();
   const doc = findSP().window.document;
   const carousel = settings.showOnHome ? null : carouselClass();
 
-  doc.querySelectorAll(`.${cls}`).forEach((el) => {
+  doc.querySelectorAll(selector).forEach((el) => {
     const cur = el.getAttribute(ATTR);
     let pid: string | null = null;
 
@@ -196,6 +216,7 @@ export function tagCapsules(): void {
 
 let observer: MutationObserver | null = null;
 let scheduled = false;
+let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 export function startObserver(): void {
   if (observer) return;
@@ -225,10 +246,19 @@ export function startObserver(): void {
     attributes: true,
     attributeFilter: ["src"],
   });
+
+  // Safety net: some views (heavily virtualised grids) don't always emit a
+  // mutation we catch, so re-scan on a low-frequency timer as well. Writes only
+  // happen when a tag actually changes, so this is cheap.
+  pollTimer = setInterval(schedule, 1000);
   schedule();
 }
 
 export function stopObserver(): void {
   observer?.disconnect();
   observer = null;
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
 }

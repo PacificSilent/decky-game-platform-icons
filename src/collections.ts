@@ -69,7 +69,9 @@ function collectionsForApp(appId: number): SteamCollection[] {
  * Resolve which platform badge to show for an app. Priority per the app's
  * collections: an explicit platform override wins immediately; "none" hides that
  * collection's contribution; otherwise auto-detection matches the collection
- * name. First confident match wins.
+ * name. When nothing matches, fall back to `fallbackPlatform` (e.g. Steam) so
+ * uncategorised titles still get a badge — unless the user explicitly hid one of
+ * the app's collections with "none".
  */
 export function getPlatformIdForApp(
   appId: number,
@@ -77,17 +79,25 @@ export function getPlatformIdForApp(
 ): string | null {
   if (!settings.enabled) return null;
   const cols = collectionsForApp(appId);
-  if (!cols.length) return null;
 
   let autoMatch: string | null = null;
+  let explicitlyHidden = false;
   for (const col of cols) {
     const ov = settings.overrides[col.id];
-    if (ov === NONE_PLATFORM) continue;
+    if (ov === NONE_PLATFORM) {
+      explicitlyHidden = true;
+      continue;
+    }
     if (ov) return ov;
     if (settings.autoDetect && !autoMatch) {
       const p = matchPlatform(col.displayName);
       if (p) autoMatch = p.id;
     }
   }
-  return autoMatch;
+  if (autoMatch) return autoMatch;
+  if (explicitlyHidden) return null;
+  if (settings.fallbackPlatform && settings.fallbackPlatform !== NONE_PLATFORM) {
+    return settings.fallbackPlatform;
+  }
+  return null;
 }

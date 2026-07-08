@@ -22,6 +22,8 @@ cada card de juego, según la **colección de Steam** a la que pertenece.
   inteligente, p. ej. *Xbox 360* gana a *Xbox*).
 - ✏️ **Mapeo manual** por colección desde el menú de Acceso rápido: elige el logo
   exacto o **oculta** el badge para una colección concreta.
+- 🏷️ **Icono por defecto** para juegos sin categoría (por defecto el logo de
+  Steam), configurable, para que todo el catálogo tenga su badge.
 - 🎨 **Colores de marca representativos** para cada plataforma.
 - ⚙️ **Personalizable**: esquina (4 posiciones), tamaño, opacidad, con/sin fondo
   (chip), logo en color de marca o blanco, y mostrar u ocultar en la pantalla de

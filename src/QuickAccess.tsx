@@ -96,6 +96,19 @@ export const QuickAccessPanel: FC = () => {
             onChange={(v) => updateSettings({ autoDetect: v })}
           />
         </PanelSectionRow>
+        <PanelSectionRow>
+          <DropdownItem
+            label="Juegos sin categoría"
+            menuLabel="Juegos sin categoría"
+            description="Logo por defecto para juegos que no están en ninguna colección (p. ej. títulos de Steam)"
+            rgOptions={[
+              { data: NONE_PLATFORM, label: "Ninguno" },
+              ...platformOptions,
+            ]}
+            selectedOption={settings.fallbackPlatform || NONE_PLATFORM}
+            onChange={(o) => updateSettings({ fallbackPlatform: o.data as string })}
+          />
+        </PanelSectionRow>
       </PanelSection>
 
       <PanelSection title="Apariencia">

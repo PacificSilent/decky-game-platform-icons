@@ -24,6 +24,12 @@ export interface PluginSettings {
   /** Auto-match collection names to known platforms. */
   autoDetect: boolean;
   /**
+   * Platform id shown for apps that don't match any collection (e.g. plain
+   * Steam titles). "none" disables the fallback so only categorised games get a
+   * badge. Defaults to "steam".
+   */
+  fallbackPlatform: string;
+  /**
    * Per-collection manual mapping. Key is the Steam collection id, value is a
    * platform id from the registry, or the literal "none" to hide a badge for
    * that collection. Overrides always win over auto-detection.
@@ -42,6 +48,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   useColor: true,
   showChip: true,
   autoDetect: true,
+  fallbackPlatform: "steam",
   overrides: {},
 };
 
